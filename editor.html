@@ -215,6 +215,31 @@
 
     .meta-field input:focus { outline: none; border-color: #4a6741; box-shadow: 0 0 0 2px rgba(74,103,65,0.15); }
 
+    /* ── Preview Header ── */
+    .preview-header {
+      display: none;
+      padding: 1.5rem 1.5rem 0;
+    }
+
+    .preview-header.visible { display: block; }
+
+    .preview-header h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #1a1a1a;
+      margin-bottom: 0.35rem;
+    }
+
+    .preview-header .preview-meta {
+      font-size: 0.85rem;
+      color: #8a8578;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e2dc;
+    }
+
+    .preview-header .preview-meta .author { font-weight: 500; color: #5a5549; }
+
     /* ── Editor Area ── */
     .editor-wrapper {
       background: #fff;
@@ -442,6 +467,13 @@
     </div>
 
     <div class="editor-wrapper">
+      <div class="preview-header" id="preview-header">
+        <h1 id="preview-title"></h1>
+        <div class="preview-meta">
+          <span class="author" id="preview-author"></span>
+          <span id="preview-date"></span>
+        </div>
+      </div>
       <div class="editor-area preview"
            id="editor"
            contenteditable="true"
@@ -510,8 +542,39 @@
     const metaDate = document.getElementById('meta-date');
     const metaImage = document.getElementById('meta-image');
 
+    const previewHeader = document.getElementById('preview-header');
+    const previewTitle = document.getElementById('preview-title');
+    const previewAuthor = document.getElementById('preview-author');
+    const previewDate = document.getElementById('preview-date');
+
     // Default date to today
     metaDate.value = new Date().toISOString().split('T')[0];
+
+    // ── Preview Header ──
+    function updatePreviewHeader() {
+      var title = metaTitle.value.trim();
+      var author = metaAuthor.value.trim();
+      var date = metaDate.value;
+      var hasContent = title || author;
+
+      previewHeader.classList.toggle('visible', hasContent && mode === 'preview');
+      previewTitle.textContent = title;
+
+      var parts = [];
+      if (author) parts.push(author);
+      if (date) {
+        var d = new Date(date + 'T00:00:00');
+        parts.push(d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+      }
+      previewAuthor.textContent = author;
+      previewDate.textContent = (author && date ? ' \u00B7 ' : '') +
+        (date ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '');
+    }
+
+    metaTitle.addEventListener('input', updatePreviewHeader);
+    metaAuthor.addEventListener('input', updatePreviewHeader);
+    metaDate.addEventListener('change', updatePreviewHeader);
+    updatePreviewHeader();
 
     // ── Turndown ──
     const turndown = new TurndownService({
@@ -605,8 +668,9 @@
       }
 
       mode = newMode;
-      btnPreview.classList.toggle('active', mode === 'preview');
-      btnEdit.classList.toggle('active', mode === 'edit');
+      btnPreview.classList.toggle('active', mode !== 'preview');
+      btnEdit.classList.toggle('active', mode !== 'edit');
+      updatePreviewHeader();
       updateCharCount();
     }
 
