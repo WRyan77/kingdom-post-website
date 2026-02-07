@@ -132,7 +132,11 @@
       background: #fff;
     }
 
-    .mode-toggle button.active { background: #e8e5de; font-weight: 600; }
+    .mode-toggle button.active {
+      background: #4a6741;
+      color: #fff;
+      font-weight: 600;
+    }
     .mode-toggle button + button { border-left: 1px solid #d5d0c6; }
 
     /* ── Image Popover ── */
@@ -215,15 +219,14 @@
 
     .meta-field input:focus { outline: none; border-color: #4a6741; box-shadow: 0 0 0 2px rgba(74,103,65,0.15); }
 
-    /* ── Preview Header ── */
-    .preview-header {
-      display: none;
-      padding: 1.5rem 1.5rem 0;
+    /* ── Injected Preview Meta ── */
+    .editor-area .injected-meta {
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e2dc;
     }
 
-    .preview-header.visible { display: block; }
-
-    .preview-header h1 {
+    .editor-area .injected-meta h1 {
       font-size: 1.7rem;
       font-weight: 700;
       line-height: 1.3;
@@ -231,14 +234,12 @@
       margin-bottom: 0.35rem;
     }
 
-    .preview-header .preview-meta {
+    .editor-area .injected-meta .meta-line {
       font-size: 0.85rem;
       color: #8a8578;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #e5e2dc;
     }
 
-    .preview-header .preview-meta .author { font-weight: 500; color: #5a5549; }
+    .editor-area .injected-meta .meta-line .author { font-weight: 500; color: #5a5549; }
 
     /* ── Editor Area ── */
     .editor-wrapper {
@@ -467,13 +468,6 @@
     </div>
 
     <div class="editor-wrapper">
-      <div class="preview-header" id="preview-header">
-        <h1 id="preview-title"></h1>
-        <div class="preview-meta">
-          <span class="author" id="preview-author"></span>
-          <span id="preview-date"></span>
-        </div>
-      </div>
       <div class="editor-area preview"
            id="editor"
            contenteditable="true"
@@ -542,39 +536,47 @@
     const metaDate = document.getElementById('meta-date');
     const metaImage = document.getElementById('meta-image');
 
-    const previewHeader = document.getElementById('preview-header');
-    const previewTitle = document.getElementById('preview-title');
-    const previewAuthor = document.getElementById('preview-author');
-    const previewDate = document.getElementById('preview-date');
-
     // Default date to today
     metaDate.value = new Date().toISOString().split('T')[0];
 
-    // ── Preview Header ──
-    function updatePreviewHeader() {
+    // ── Inject Preview Meta ──
+    // Prepends or updates a title/author/date block at the top of the editor in preview mode.
+    // Uses a div with class "injected-meta" that Turndown will strip out since we skip it on save.
+    function injectPreviewMeta() {
+      if (mode !== 'preview') return;
+
+      // Remove existing injected block
+      var existing = editor.querySelector('.injected-meta');
+      if (existing) existing.remove();
+
       var title = metaTitle.value.trim();
       var author = metaAuthor.value.trim();
       var date = metaDate.value;
-      var hasContent = title || author;
 
-      previewHeader.classList.toggle('visible', hasContent && mode === 'preview');
-      previewTitle.textContent = title;
+      if (!title && !author) return;
 
-      var parts = [];
-      if (author) parts.push(author);
+      var dateFormatted = '';
       if (date) {
         var d = new Date(date + 'T00:00:00');
-        parts.push(d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+        if (!isNaN(d.getTime())) {
+          dateFormatted = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        }
       }
-      previewAuthor.textContent = author;
-      previewDate.textContent = (author && date ? ' \u00B7 ' : '') +
-        (date ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '');
+
+      var metaHTML = '<div class="injected-meta" contenteditable="false">';
+      if (title) metaHTML += '<h1>' + title + '</h1>';
+      var parts = [];
+      if (author) parts.push('<span class="author">' + author + '</span>');
+      if (dateFormatted) parts.push(dateFormatted);
+      if (parts.length) metaHTML += '<div class="meta-line">' + parts.join(' \u00B7 ') + '</div>';
+      metaHTML += '</div>';
+
+      editor.insertAdjacentHTML('afterbegin', metaHTML);
     }
 
-    metaTitle.addEventListener('input', updatePreviewHeader);
-    metaAuthor.addEventListener('input', updatePreviewHeader);
-    metaDate.addEventListener('change', updatePreviewHeader);
-    updatePreviewHeader();
+    metaTitle.addEventListener('input', injectPreviewMeta);
+    metaAuthor.addEventListener('input', injectPreviewMeta);
+    metaDate.addEventListener('change', injectPreviewMeta);
 
     // ── Turndown ──
     const turndown = new TurndownService({
@@ -641,11 +643,20 @@
     btnPreview.addEventListener('click', function() { switchMode('preview'); });
     btnEdit.addEventListener('click', function() { switchMode('edit'); });
 
+    // Strip injected meta block from editor HTML before converting
+    function getCleanHTML() {
+      var clone = editor.cloneNode(true);
+      var injected = clone.querySelector('.injected-meta');
+      if (injected) injected.remove();
+      return clone.innerHTML;
+    }
+
     function switchMode(newMode) {
       if (newMode === mode) return;
 
       if (newMode === 'edit') {
-        pastedHTML = editor.innerHTML;
+        // Strip injected meta before converting to markdown
+        pastedHTML = getCleanHTML();
         currentMarkdown = turndown.turndown(pastedHTML);
         editor.textContent = currentMarkdown;
         editor.classList.remove('preview');
@@ -657,32 +668,31 @@
         editor.classList.remove('edit-mode');
         editor.classList.add('preview');
         editor.setAttribute('data-placeholder', 'Paste formatted text here...');
-        // Render the current markdown as HTML for preview
         if (currentMarkdown.trim()) {
           editor.innerHTML = marked.parse(currentMarkdown);
           pastedHTML = editor.innerHTML;
         } else if (pastedHTML) {
           editor.innerHTML = pastedHTML;
         }
+        injectPreviewMeta();
         statusText.textContent = 'Preview mode — paste formatted text or switch to Markdown';
       }
 
       mode = newMode;
-      btnPreview.classList.toggle('active', mode !== 'preview');
-      btnEdit.classList.toggle('active', mode !== 'edit');
-      updatePreviewHeader();
+      btnPreview.classList.toggle('active', mode === 'preview');
+      btnEdit.classList.toggle('active', mode === 'edit');
       updateCharCount();
     }
 
     // ── Character Count ──
     function updateCharCount() {
-      var text = mode === 'edit' ? editor.textContent : turndown.turndown(editor.innerHTML);
+      var text = mode === 'edit' ? editor.textContent : turndown.turndown(getCleanHTML());
       charCount.textContent = text.trim().length > 0 ? text.trim().length + ' chars' : '';
     }
 
     editor.addEventListener('input', function() {
       if (mode === 'preview') {
-        pastedHTML = editor.innerHTML;
+        pastedHTML = getCleanHTML();
       } else {
         currentMarkdown = editor.textContent;
       }
@@ -916,7 +926,7 @@
       if (mode === 'edit') {
         md = editor.textContent;
       } else {
-        md = turndown.turndown(editor.innerHTML);
+        md = turndown.turndown(getCleanHTML());
       }
 
       if (!md.trim()) {
