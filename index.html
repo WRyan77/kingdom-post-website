@@ -240,6 +240,37 @@
       return '<p>' + text + '</p>';
     }
 
+    // Fallback URL for raw blog content via GitHub CDN
+    var RAW_BASE = 'https://raw.githubusercontent.com/WRyan77/kingdom-post/main/';
+
+    function fetchBlogFile(file) {
+      return fetch(file).then(function(r) {
+        if (r.ok) return r.text();
+        // Direct fetch failed — try GitHub raw content CDN as fallback
+        return fetch(RAW_BASE + file).then(function(r2) {
+          if (!r2.ok) throw new Error('Failed to load: ' + r2.status);
+          return r2.text();
+        });
+      });
+    }
+
+    function displayBlog(text, blogInfo) {
+      var parsed = parseFrontmatter(text);
+      var meta = parsed.meta;
+      var body = parsed.body;
+      var html = renderMarkdown(body);
+
+      var author = meta.author || blogInfo.author || '';
+      var date = meta.date || blogInfo.date || '';
+
+      reader.innerHTML =
+        '<div class="reader-meta">' +
+          '<span class="author">' + author + '</span>' +
+          (date ? ' &middot; ' + formatDate(date) : '') +
+        '</div>' +
+        '<div class="reader-content">' + html + '</div>';
+    }
+
     function loadBlog(file) {
       activeFile = file;
       renderBlogList();
@@ -248,27 +279,8 @@
       // Get metadata from blogs.json as fallback
       var blogInfo = blogs.find(function(b) { return b.file === file; }) || {};
 
-      fetch(file)
-        .then(function(r) {
-          if (!r.ok) throw new Error('Failed to load: ' + r.status);
-          return r.text();
-        })
-        .then(function(text) {
-          var parsed = parseFrontmatter(text);
-          var meta = parsed.meta;
-          var body = parsed.body;
-          var html = renderMarkdown(body);
-
-          var author = meta.author || blogInfo.author || '';
-          var date = meta.date || blogInfo.date || '';
-
-          reader.innerHTML =
-            '<div class="reader-meta">' +
-              '<span class="author">' + author + '</span>' +
-              (date ? ' &middot; ' + formatDate(date) : '') +
-            '</div>' +
-            '<div class="reader-content">' + html + '</div>';
-        })
+      fetchBlogFile(file)
+        .then(function(text) { displayBlog(text, blogInfo); })
         .catch(function(err) {
           reader.innerHTML =
             '<div class="reader-meta">' +
