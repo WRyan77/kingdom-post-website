@@ -15,28 +15,88 @@
       line-height: 1.6;
     }
 
-    /* ── Header ── */
-    header {
-      background: #fff;
-      border-bottom: 1px solid #e5e2dc;
-      padding: 1rem 2rem;
+    /* ── Top Nav Bar ── */
+    .top-nav {
+      background: #1a1a1a;
+      padding: 0.6rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 20;
     }
 
-    header h1 {
-      font-size: 1.4rem;
+    .top-nav-brand {
+      font-size: 1rem;
       font-weight: 600;
-      letter-spacing: 0.02em;
-      color: #1a1a1a;
-      max-width: 1400px;
+      color: #fff;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .top-nav-brand span {
+      font-weight: 300;
+      color: #a0a0a0;
+    }
+
+    .top-nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .top-nav-links li a {
+      color: #c0c0c0;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: color 0.2s;
+    }
+
+    .top-nav-links li a:hover {
+      color: #fff;
+    }
+
+    /* ── Hero Banner ── */
+    .hero-banner {
+      background: linear-gradient(135deg, #2d4a22 0%, #4a6741 40%, #6b8f5e 100%);
+      padding: 3rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-banner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .hero-content {
+      position: relative;
+      max-width: 700px;
       margin: 0 auto;
     }
 
-    header h1 span {
+    .hero-banner h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-banner p {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.8);
       font-weight: 300;
-      color: #7a7568;
     }
 
     /* ── Layout ── */
@@ -157,6 +217,24 @@
       font-size: 0.95rem;
     }
 
+    /* ── Footer ── */
+    .site-footer {
+      background: #1a1a1a;
+      color: #a0a0a0;
+      text-align: center;
+      padding: 1.5rem 2rem;
+      font-size: 0.8rem;
+    }
+
+    .site-footer a {
+      color: #8fb885;
+      text-decoration: none;
+    }
+
+    .site-footer a:hover {
+      color: #b5d4ad;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 768px) {
       .container { flex-direction: column-reverse; }
@@ -170,13 +248,28 @@
         max-height: none;
         border-bottom: 1px solid #e5e2dc;
       }
+      .hero-banner { padding: 2rem 1.5rem; }
+      .hero-banner h1 { font-size: 1.8rem; }
+      .top-nav-links { gap: 1rem; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Kingdom <span>Post</span></h1>
-  </header>
+  <nav class="top-nav">
+    <div class="top-nav-brand">Kingdom <span>Post</span></div>
+    <ul class="top-nav-links">
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Articles</a></li>
+      <li><a href="#">About</a></li>
+    </ul>
+  </nav>
+
+  <div class="hero-banner">
+    <div class="hero-content">
+      <h1>Kingdom Post</h1>
+      <p>Stories, insights, and chronicles from across the realm</p>
+    </div>
+  </div>
 
   <div class="container">
     <main class="reader">
@@ -187,6 +280,10 @@
       <div id="blog-list"></div>
     </aside>
   </div>
+
+  <footer class="site-footer">
+    &copy; 2026 Kingdom Post. All rights reserved.
+  </footer>
 
   <script>
     const blogList = document.getElementById('blog-list');
