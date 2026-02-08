@@ -461,10 +461,6 @@
         <label for="meta-date">Date</label>
         <input type="date" id="meta-date" />
       </div>
-      <div class="meta-field full-width">
-        <label for="meta-image">Image URL</label>
-        <input type="text" id="meta-image" placeholder="https://... or blog/media/photo.jpg" />
-      </div>
     </div>
 
     <div class="editor-wrapper">
@@ -534,10 +530,18 @@
     const metaTitle = document.getElementById('meta-title');
     const metaAuthor = document.getElementById('meta-author');
     const metaDate = document.getElementById('meta-date');
-    const metaImage = document.getElementById('meta-image');
 
     // Default date to today
     metaDate.value = new Date().toISOString().split('T')[0];
+
+    // Auto-populate filename with current date (MMDDyy.md)
+    (function() {
+      var now = new Date();
+      var mm = String(now.getMonth() + 1).padStart(2, '0');
+      var dd = String(now.getDate()).padStart(2, '0');
+      var yy = String(now.getFullYear()).slice(-2);
+      filenameInput.value = mm + dd + yy + '.md';
+    })();
 
     // ── Inject Preview Meta ──
     // Prepends or updates a title/author/date block at the top of the editor in preview mode.
@@ -899,7 +903,7 @@
       var title = metaTitle.value.trim();
       var author = metaAuthor.value.trim();
       var date = metaDate.value;
-      var image = metaImage.value.trim();
+      var image = '';
 
       if (!title) {
         showToast('Enter a title', 'error');
